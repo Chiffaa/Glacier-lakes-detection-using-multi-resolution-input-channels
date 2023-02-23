@@ -1,5 +1,5 @@
 # Glacier lakes detection using multi-resolution input channels
- Research module
+ Research module at University of Potsdam
 
 The dataset source:
 
