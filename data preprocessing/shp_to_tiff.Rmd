@@ -1,0 +1,67 @@
+---
+title: "shp_to_tiff"
+author: "Elena Golimblevskaia"
+date: "2023-01-12"
+output: html_document
+---
+The following code is taking from https://www.r-bloggers.com/2014/05/converting-shapefiles-to-rasters-in-r/
+
+```{r}
+shp2raster <- function(shp, mask.raster, label, value, transform = FALSE, proj.from = NA,
+    proj.to = NA, map = TRUE) {
+    require(raster, rgdal)
+    # use transform==TRUE if the polygon is not in the same coordinate system as
+    # the output raster, setting proj.from & proj.to to the appropriate
+    # projections
+    if (transform == TRUE) {
+        proj4string(shp) <- proj.from
+        shp <- spTransform(shp, proj.to)
+    }
+    # convert the shapefile to a raster based on a standardised background
+    # raster
+    r <- rasterize(shp, mask.raster)
+    
+    # set the cells associated with the shapfile to the specified value
+    r[!is.na(r)] <- value
+    # merge the new raster with the mask raster and export to the working
+    # directory as a tif file
+    #r <- mask(merge(r, mask.raster), mask.raster, filename = label, format = "GTiff", overwrite = T)
+    # plot map of new raster
+    if (map == TRUE) {
+        plot(r, main = label, axes = F, box = F)
+    }
+    names(r) <- label
+    return(r)
+}
+```
+
+```{r}
+library(sf)
+library(rgdal)
+library(raster)
+library(maptools)
+```
+
+
+```{r}
+library(sf)
+library(rgdal)
+library(raster)
+
+images <- list("LC82320932016072LGN00", "LC82300962015103LGN00", "LC82330822016047LGN00", "LC82330832016047LGN00", "LC82330842016047LGN00", "LC82330852016047LGN00", "LC82310962014075LGN00", "LC82330872016079LGN00", "LC82300962013353LGN00", "LC82320932015021LGN00", "LC82320942015021LGN00", "LC82320952015021LGN00", "LC82310942016081LGN00", "LC82310952016081LGN00", "LC82310962016081LGN00", "LC82310962016113LGN00", "LC82320832016088LGN00", "LC82320872016088LGN00", "LC82320942016120LGN00", "LC82330882016031LGN00", "LC82310932016033LGNOO", "LC82310952016033LGN00", "LC82330852016095LGN00", "LC882310922016065LGN00", "LC82310932016065LGN00", "LC82310942016065LGN00", "LC82320892016008LGN00", "LC82320842016040LGN00", "LC82320882016040LGN00", "LC82320852016072LGN00", "LC82320862016072LGN00", "LC82320882016072LGN00", "LC82320902016072LGN00", "LC82320912016072LGN00", "LC82320922016072LGN00")
+#
+
+wd <- ("C:/Users/Елена/OneDrive/Study/potsdam/RM/data/")
+
+for(i in images) {
+  rast <- raster(paste0(wd, "images/", i, ".tif"))
+  rast[!is.na(rast)] <- 0
+  #plot(rast, axes = F, box = F, legend = F, main = i)
+  shape <- readOGR(paste0(wd, "labels_shp/", i, "/", i,".shp"))
+  #plot(shape, add = T)
+  result <- shp2raster(shp = shape, mask.raster = rast, label = i, transform = FALSE, value = 1, map = FALSE)
+  writeRaster(result, paste0(wd,'labels/', i, '.tiff'), overwrite=TRUE)
+}
+```
+
+
