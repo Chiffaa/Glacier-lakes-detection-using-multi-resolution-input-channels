@@ -14,6 +14,3 @@ Data preprocessing folder contains code used for the following purposes:
 - overlapping the images with the mask of the glacier;
 - cropping images and labels into patches of 1024x1024 size. 
 
-The dataset can be accessed here: 
-
-/to add link/
