@@ -39,28 +39,20 @@ shp2raster <- function(shp, mask.raster, label, value, transform = FALSE, proj.f
 library(sf)
 library(rgdal)
 library(raster)
-library(maptools)
-```
 
-
-```{r}
-library(sf)
-library(rgdal)
-library(raster)
-
-images <- list("LC82320932016072LGN00", "LC82300962015103LGN00", "LC82330822016047LGN00", "LC82330832016047LGN00", "LC82330842016047LGN00", "LC82330852016047LGN00", "LC82310962014075LGN00", "LC82330872016079LGN00", "LC82300962013353LGN00", "LC82320932015021LGN00", "LC82320942015021LGN00", "LC82320952015021LGN00", "LC82310942016081LGN00", "LC82310952016081LGN00", "LC82310962016081LGN00", "LC82310962016113LGN00", "LC82320832016088LGN00", "LC82320872016088LGN00", "LC82320942016120LGN00", "LC82330882016031LGN00", "LC82310932016033LGNOO", "LC82310952016033LGN00", "LC82330852016095LGN00", "LC882310922016065LGN00", "LC82310932016065LGN00", "LC82310942016065LGN00", "LC82320892016008LGN00", "LC82320842016040LGN00", "LC82320882016040LGN00", "LC82320852016072LGN00", "LC82320862016072LGN00", "LC82320882016072LGN00", "LC82320902016072LGN00", "LC82320912016072LGN00", "LC82320922016072LGN00")
+#images <- list(...list of image names without extension...)
 #
 
-wd <- ("C:/Users/Елена/OneDrive/Study/potsdam/RM/data/")
+#wd <- (..your working directory..)
 
 for(i in images) {
-  rast <- raster(paste0(wd, "images/", i, ".tif"))
+  rast <- raster(paste0(wd, "data/original_images/", i, ".tif"))
   rast[!is.na(rast)] <- 0
-  #plot(rast, axes = F, box = F, legend = F, main = i)
-  shape <- readOGR(paste0(wd, "labels_shp/", i, "/", i,".shp"))
+  plot(rast, axes = F, box = F, legend = F, main = i)
+  shape <- readOGR(paste0(wd, "data/labels_shp_new/", i, "/", i,".shp"))
   #plot(shape, add = T)
   result <- shp2raster(shp = shape, mask.raster = rast, label = i, transform = FALSE, value = 1, map = FALSE)
-  writeRaster(result, paste0(wd,'labels/', i, '.tiff'), overwrite=TRUE)
+  #writeRaster(result, paste0(wd,'labels/', i, '.tiff'), overwrite=TRUE)
 }
 ```
 

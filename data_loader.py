@@ -45,9 +45,7 @@ class LakesDataset(Dataset):
 
 
     def __len__(self):
-        '''
-        Returns the total number of images
-        '''
+        '''Returns the total number of images'''
         return len(self.filenames)
         
 
@@ -64,5 +62,3 @@ class LakesDataset(Dataset):
         lbl = ToTensor()(self.normalize(lbl.read(1)))
 
         return img, lbl        
-    
-
