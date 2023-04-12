@@ -1,45 +1,52 @@
-import wget
 import os
-import zipfile
-from PIL import Image
+import kaggle
 import rasterio
 import numpy as np
+import torch
 from torchvision.transforms import ToTensor
 from torch.utils.data import Dataset
 
-def download_dataset(data_path):
-    url = 'https://github.com/Chiffaa/Glacier-lakes-detection-using-multi-resolution-input-channels/archive/refs/heads/main.zip'
-    output_directory = 'lakes.zip'
-    if output_directory not in os.listdir(data_path):
-        lakes = wget.download(url, out=output_directory)
+def get_device():
+    return torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    with zipfile.ZipFile(output_directory) as archive:
-        for file in archive.namelist():
-            if file.startswith('Glacier-lakes-detection-using-multi-resolution-input-channels-main/data/'):
-                archive.extract(file[67:])   
+def download_dataset(data_path):
+
+    ''' For this you need to have kaggle.json file in users/username/.kaggle folder (or wherever you specify it)
+        This function may be extended if I ever have motivation for it, otherwise please unpack data manually '''
+    
+    kaggle.api.authenticate()
+    path = data_path
+    if data_path == '':
+        path = None
+    kaggle.api.dataset_download_files("elenagolimblevskaia/glacier-lakes-detection-via-satellite-images", path=path, quiet=False)
             
 
 class LakesDataset(Dataset):
 
-    def __init__(self, data_path=None, download=False, transforms=None, train=True):
+    def __init__(self, data_path='', download=False, transforms=None, train=True, patch_size=None):
+
+
         if download:
             download_dataset(data_path)
 
+        self.path = data_path
+        self.patch_size = patch_size
+        self.device = get_device()
 
         # The data should be structured in the working folder as {data: {train: [images, labels], test: [images, labels]}]}
 
         if train:
-            self.images_path = 'data/train/images/'
-            self.labels_path = 'data/train/labels/'
+            self.images_path = self.path + 'data/train/images/'
+            self.labels_path = self.path + 'data/train/labels/'
 
         else: 
-            self.images_path = 'data/test/images/'
-            self.labels_path = 'data/test/labels/'
+            self.images_path = self.path + 'data/test/images/'
+            self.labels_path = self.path + 'data/test/labels/'
 
         self.filenames = os.listdir(self.images_path)
 
     def normalize(self, array):
-        """Normalizes numpy arrays into scale 0.0 - 1.0"""
+        """Normalizes input arrays into scale 0.0 - 1.0"""
         array_min, array_max = array.min(), array.max()
         return ((array - array_min)/(array_max - array_min))
 
@@ -50,15 +57,41 @@ class LakesDataset(Dataset):
         
 
     def __getitem__(self, idx):
+        
+        '''In case of patching returns several images, otherwise one (but we are going to use patching since the images are too big)'''
+
         im_name = self.filenames[idx]
         lbl_name = self.filenames[idx] + 'f'
-        print(self.images_path + im_name)
-        print(self.labels_path + lbl_name)
+
+        # Reading images
 
         img = (rasterio.open(self.images_path + im_name))
         lbl = (rasterio.open(self.labels_path + lbl_name))
 
-        img = ToTensor()(np.dstack((self.normalize(img.read(1)), self.normalize(img.read(2)), self.normalize(img.read(3)))))
-        lbl = ToTensor()(self.normalize(lbl.read(1)))
+        img = np.array([self.normalize(img.read(1)), self.normalize(img.read(2)), self.normalize(img.read(3))])
+        lbl = np.array((lbl.read(1) > 0.5).astype(float))
 
-        return img, lbl        
+        if self.patch_size:
+
+            img_patches = []
+            label_patches = []
+
+            for i in range(0, img.shape[1], self.patch_size):
+                for j in range(0, img.shape[2], self.patch_size):
+                    if (i + self.patch_size < img.shape[1]) and (j + self.patch_size < img.shape[2]):
+                        img_patch = img[:, i:i+self.patch_size, j:j+self.patch_size]
+                        label_patch = lbl[i:i+self.patch_size, j:j+self.patch_size]
+
+                        # Checking if the image acutally has some lakes and not just black
+                        if 1 in label_patch and not (img_patch == 0).all():
+
+                            
+                            img_patch = ToTensor()(img_patch).permute(1,2,0)
+                            label_patch = ToTensor()(label_patch)
+                            img_patches.append(img_patch)
+                            label_patches.append(label_patch)
+
+            return torch.stack(img_patches, dim=0), torch.stack(label_patches)
+        
+        return ToTensor()(img), ToTensor()(lbl)
+
