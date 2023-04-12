@@ -16,5 +16,6 @@ Data preprocessing folder contains code used for the following purposes:
 - and explanation why it was useless and why I re-did the dataset. 
 
 The new dataset is available on Kaggle: https://www.kaggle.com/datasets/elenagolimblevskaia/glacier-lakes-detection-via-satellite-images
+
 If you're interested, you can contact me for the old version, or for the raw/partially preprocessed data. 
 
