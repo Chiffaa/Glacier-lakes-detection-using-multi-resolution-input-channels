@@ -13,4 +13,9 @@ Data preprocessing folder contains code used for the following purposes:
 - creating labels based on the shapefiles;
 - overlapping the images with the mask of the glacier;
 - cropping images and labels into patches of 1024x1024 size. 
+- and explanation why it was useless and why I re-did the dataset. 
+
+The new dataset is available on Kaggle: https://www.kaggle.com/datasets/elenagolimblevskaia/glacier-lakes-detection-via-satellite-images
+
+If you're interested, you can contact me for the old version, or for the raw/partially preprocessed data. 
 
