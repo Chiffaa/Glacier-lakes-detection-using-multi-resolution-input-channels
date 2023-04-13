@@ -5,45 +5,64 @@ import numpy as np
 import torch
 from torchvision.transforms import ToTensor
 from torch.utils.data import Dataset
+from patch_images import CropImages
 
-def get_device():
-    return torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
-def download_dataset(data_path):
-
-    ''' For this you need to have kaggle.json file in users/username/.kaggle folder (or wherever you specify it)
-        This function may be extended if I ever have motivation for it, otherwise please unpack data manually '''
-    
-    kaggle.api.authenticate()
-    path = data_path
-    if data_path == '':
-        path = None
-    kaggle.api.dataset_download_files("elenagolimblevskaia/glacier-lakes-detection-via-satellite-images", path=path, quiet=False)
-            
 
 class LakesDataset(Dataset):
 
-    def __init__(self, data_path='', download=False, transforms=None, train=True, patch_size=None):
+    def __init__(self, data_path=None, download=False, patch_size=None, train=True):
+        '''
+        data_path is used if data directory is not the working directory
+        download=True downloads data from Kaggle 
+        patch_size=size (e.g. 256/512/1024...) if you want to use images of fixed size (croppes images into patches and saves in data_size/ folder if it's not done)
+        train=False means that test dataset is going to be available
+        '''
 
+        self.data_path = data_path
+        self.patch_size = patch_size
 
         if download:
-            download_dataset(data_path)
+            self.download_dataset(self.data_path)
 
-        self.path = data_path
-        self.patch_size = patch_size
-        self.device = get_device()
+        if self.patch_size:
+            self.patch_images() 
+            if self.data_path:
+                self.data_path = self.data_path + 'data_' + str(self.patch_size)
+            else:
+                self.data_path = 'data_' + str(self.patch_size)
 
-        # The data should be structured in the working folder as {data: {train: [images, labels], test: [images, labels]}]}
+        else:
+            self.data_path = 'data'
+                               
+            
+        # The data should be structured in the working folder as {data (data_size): {train: [images, labels], test: [images, labels]}]}
 
         if train:
-            self.images_path = self.path + 'data/train/images/'
-            self.labels_path = self.path + 'data/train/labels/'
+            self.images_path = self.data_path + '/train/images/'
+            self.labels_path = self.data_path + '/train/labels/'
 
         else: 
-            self.images_path = self.path + 'data/test/images/'
-            self.labels_path = self.path + 'data/test/labels/'
+            self.images_path = self.data_path + '/test/images/'
+            self.labels_path = self.data_path + '/test/labels/'
 
-        self.filenames = os.listdir(self.images_path)
+        self.filenames = os.listdir(self.images_path)   
+
+    def download_dataset(self):
+
+        ''' For this you need to have kaggle.json file in users/username/.kaggle folder (or wherever you specify it)
+            This function may be extended if I ever have motivation for it, otherwise please unpack data manually in 'data/' folder '''
+        
+        kaggle.api.authenticate()
+        path = self.data_path
+        if self.data_path == '':
+            path = None
+        kaggle.api.dataset_download_files("elenagolimblevskaia/glacier-lakes-detection-via-satellite-images", path=path, quiet=False)
+
+    def patch_images(self):
+        if ('data_' + str(self.patch_size)) not in os.listdir(self.data_path):
+            im_crop = CropImages(self.data_path + 'data/', self.patch_size)
+            im_crop.crop_images()
+
 
     def normalize(self, array):
         """Normalizes input arrays into scale 0.0 - 1.0"""
@@ -52,7 +71,7 @@ class LakesDataset(Dataset):
 
 
     def __len__(self):
-        '''Returns the total number of images'''
+        '''Returns the total number of patches'''
         return len(self.filenames)
         
 
@@ -68,31 +87,19 @@ class LakesDataset(Dataset):
         img = (rasterio.open(self.images_path + im_name))
         lbl = (rasterio.open(self.labels_path + lbl_name))
 
-        img = np.array([self.normalize(img.read(1)), self.normalize(img.read(2)), self.normalize(img.read(3))])
-        lbl = np.array((lbl.read(1) > 0.5).astype(float))
-
-        if self.patch_size:
-
-            img_patches = []
-            label_patches = []
-
-            for i in range(0, img.shape[1], self.patch_size):
-                for j in range(0, img.shape[2], self.patch_size):
-                    if (i + self.patch_size < img.shape[1]) and (j + self.patch_size < img.shape[2]):
-                        img_patch = img[:, i:i+self.patch_size, j:j+self.patch_size]
-                        label_patch = lbl[i:i+self.patch_size, j:j+self.patch_size]
-
-                        # Checking if the image acutally has some lakes and not just black
-                        if 1 in label_patch and not (img_patch == 0).all():
-
-                            
-                            img_patch = ToTensor()(img_patch).permute(1,2,0)
-                            label_patch = ToTensor()(label_patch)
-                            img_patches.append(img_patch)
-                            label_patches.append(label_patch)
-
-            return torch.stack(img_patches, dim=0), torch.stack(label_patches)
+        img = np.array([self.normalize(img.read(1)), self.normalize(img.read(2)), self.normalize(img.read(3))], dtype=np.float32)
+        lbl = np.array((lbl.read(1) > 0.5).astype(np.float32))
         
-        return ToTensor()(img), ToTensor()(lbl)
+        return ToTensor()(img).permute(1,2,0), ToTensor()(lbl)
 
-#blablabla
+# batch_size = 5
+
+# train_dataset =LakesDataset(train=False, patch_size=1024)
+
+# train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=batch_size)
+
+
+# examples = iter(train_loader)
+
+# samples, labels = next(examples)
+# print(samples.shape, labels.shape)
