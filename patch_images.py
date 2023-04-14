@@ -51,6 +51,8 @@ class CropImages:
 
 
     def crop_images(self):
+        ''' This function loops through the data and saves the patches for each image '''
+        # folders might include train and test
         folders = os.listdir(self.path)
         for folder in folders:
             img_names = os.listdir(self.path + folder + '/images')
