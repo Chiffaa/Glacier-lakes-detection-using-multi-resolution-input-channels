@@ -14,17 +14,17 @@ def double_conv(in_c, out_c):
     )
     return conv
 
-# def crop_img(tensor, target_tensor):
-#     target_size = target_tensor.size()[2]
-#     tensor_size = tensor.size()[2]
-#     delta = target_size - tensor_size
-#     if delta % 2 == 0:
-#         delta = delta // 2 
-#     else: 
-#         delta = delta // 2
-#         return tensor[:,:,delta:tensor_size-delta-1,delta:tensor_size-delta-1]
+def crop_img(tensor, target_tensor):
+    target_size = target_tensor.size()[2]
+    tensor_size = tensor.size()[2]
+    delta = tensor_size - target_size
+    if delta % 2 == 0:
+        delta = delta // 2 
+    else: 
+        delta = delta // 2
+        return tensor[:,:,delta:tensor_size-delta-1,delta:tensor_size-delta-1]
     
-#     return tensor[:,:,delta:tensor_size-delta,delta:tensor_size-delta]
+    return tensor[:,:,delta:tensor_size-delta,delta:tensor_size-delta]
 
 def padding(tensor, target_tensor):
     tensor_size = tensor.size()[2] 
@@ -79,6 +79,7 @@ class UNet(nn.Module):
 
             if x.shape != skip_connection.shape:
                 x = padding(x, skip_connection)
+                # skip_connection = crop_img(skip_connection, x)
 
             concat_skip = torch.cat((skip_connection, x), dim=1)
             x = self.ups[idx+1](concat_skip)

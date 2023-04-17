@@ -10,7 +10,7 @@ from patch_images import CropImages
 
 class LakesDataset(Dataset):
 
-    def __init__(self, data_path=None, download=False, patch_size=None, train=True):
+    def __init__(self, data_path=None, download=False, patch_size=None, train=True, val=False):
         '''
         data_path is used if data directory is not the working directory
         download=True downloads data from Kaggle 
@@ -45,7 +45,12 @@ class LakesDataset(Dataset):
             self.images_path = self.data_path + '/test/images/'
             self.labels_path = self.data_path + '/test/labels/'
 
-        self.filenames = os.listdir(self.images_path)   
+        if train and not val:
+            self.filenames = os.listdir(self.images_path)[:int(len(os.listdir(self.images_path))*0.8)]
+        elif val:
+            self.filenames = os.listdir(self.images_path)[int(len(os.listdir(self.images_path))*0.8):]
+        else:
+            self.filenames = os.listdir(self.images_path)
 
     def download_dataset(self):
 
@@ -60,8 +65,13 @@ class LakesDataset(Dataset):
 
     def patch_images(self):
         if ('data_' + str(self.patch_size)) not in os.listdir(self.data_path):
-            im_crop = CropImages(self.data_path + 'data/', self.patch_size)
-            im_crop.crop_images()
+            if self.data_path:
+                im_crop = CropImages(self.data_path + 'data/', self.patch_size)
+                im_crop.crop_images()
+            else:
+                im_crop = CropImages('data/', self.patch_size)
+                im_crop.crop_images()
+
 
 
     def normalize(self, array):
@@ -94,7 +104,8 @@ class LakesDataset(Dataset):
 
 # batch_size = 5
 
-# train_dataset =LakesDataset(train=False, patch_size=1024)
+# train_dataset =LakesDataset(train=True, val=True, patch_size=1024)
+# print(len(train_dataset))
 
 # train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=batch_size)
 
