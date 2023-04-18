@@ -16,7 +16,7 @@ def load_checkpoint(checkpoint, model):
     print("=> Loading checkpoint")
     model.load_state_dict(checkpoint["state_dict"])
 
-def check_accuracy(loader, model, epoch, device=DEVICE):
+def check_accuracy(loader, model, device=DEVICE):
     num_correct = 0
     num_pixels = 0
 
@@ -39,7 +39,7 @@ def check_accuracy(loader, model, epoch, device=DEVICE):
     )
     print(f"Dice score: {dice_score/len(loader)}")
 
-    wandb.log({'epoch':epoch,'val_acc':num_correct/num_pixels * 100, 'dice_score':dice_score/len(loader)})
+    wandb.log({'val_acc':num_correct/num_pixels * 100, 'dice_score':dice_score/len(loader)})
 
     model.train()
 
