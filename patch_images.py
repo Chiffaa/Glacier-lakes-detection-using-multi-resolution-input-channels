@@ -38,7 +38,7 @@ class CropImages:
                         label_patch = ToTensor()(label_patch)
 
                         # checking if at least 70% of the image is not black
-                        if torch.sum(img_patch == 0)/(self.patch_size * self.patch_size * 3) < 0.3:
+                        if (torch.sum(img_patch == 0) + torch.sum(img_patch == 1))/(self.patch_size * self.patch_size * 3) < 0.3:
 
                             if not os.path.exists(self.path[:-1] + '_' + str(self.patch_size) + '/' + folder + '/images/'):
                                 os.makedirs(self.path[:-1] + '_' + str(self.patch_size) + '/' + folder + '/images/')
