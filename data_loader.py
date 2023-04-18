@@ -37,7 +37,7 @@ class LakesDataset(Dataset):
             
         # The data should be structured in the working folder as {data (data_size): {train: [images, labels], test: [images, labels]}]}
 
-        if train:
+        if train or val:
             self.images_path = self.data_path + '/train/images/'
             self.labels_path = self.data_path + '/train/labels/'
 
@@ -47,10 +47,10 @@ class LakesDataset(Dataset):
 
         if train and val:
             self.filenames = os.listdir(self.images_path)[:int(len(os.listdir(self.images_path))*(1-val))]
-        elif train and not val:
-            self.filenames = os.listdir(self.images_path)
         elif not train and val:
             self.filenames = os.listdir(self.images_path)[int(len(os.listdir(self.images_path))*(1-val)):]
+        elif train and not val:
+            self.filenames = os.listdir(self.images_path)
         else:
             self.filenames = os.listdir(self.images_path)
 
