@@ -10,7 +10,7 @@ from patch_images import CropImages
 
 class LakesDataset(Dataset):
 
-    def __init__(self, data_path=None, download=False, patch_size=None, train=True, val=False):
+    def __init__(self, data_path=None, download=False, patch_size=None, train=True, val=None):
         '''
         data_path is used if data directory is not the working directory
         download=True downloads data from Kaggle 
@@ -45,10 +45,12 @@ class LakesDataset(Dataset):
             self.images_path = self.data_path + '/test/images/'
             self.labels_path = self.data_path + '/test/labels/'
 
-        if train and not val:
-            self.filenames = os.listdir(self.images_path)[:int(len(os.listdir(self.images_path))*0.8)]
-        elif val:
-            self.filenames = os.listdir(self.images_path)[int(len(os.listdir(self.images_path))*0.8):]
+        if train and val:
+            self.filenames = os.listdir(self.images_path)[:int(len(os.listdir(self.images_path))*(1-val))]
+        elif train and not val:
+            self.filenames = os.listdir(self.images_path)
+        elif not train and val:
+            self.filenames = os.listdir(self.images_path)[int(len(os.listdir(self.images_path))*(1-val)):]
         else:
             self.filenames = os.listdir(self.images_path)
 
@@ -102,15 +104,23 @@ class LakesDataset(Dataset):
         
         return ToTensor()(img).permute(1,2,0), ToTensor()(lbl)
 
-# batch_size = 5
+def get_loaders(patch_size, data_path=None, val_split=None, batch_size=None):
+    if val_split:
+        train_dataset =LakesDataset(train=True, val=val_split, data_path=data_path, patch_size=patch_size)
+        val_dataset = LakesDataset(train=False, val=val_split, data_path=data_path, patch_size=patch_size)
+        test_dataset =LakesDataset(train=False, data_path=data_path, patch_size=patch_size)
 
-# train_dataset =LakesDataset(train=True, val=True, patch_size=1024)
-# print(len(train_dataset))
+        train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=batch_size)
+        val_loader = torch.utils.data.DataLoader(dataset=val_dataset, batch_size=batch_size)
+        test_loader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=batch_size)
 
-# train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=batch_size)
+        return {'train_loader':train_loader, 'val_loader':val_loader, 'test_loader':test_loader}
+    
+    else:
+        train_dataset =LakesDataset(train=True, val=val_split, data_path=data_path, patch_size=patch_size)
+        test_dataset =LakesDataset(train=False, data_path=data_path, patch_size=patch_size)
 
+        train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=batch_size)
+        test_loader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=batch_size)
 
-# examples = iter(train_loader)
-
-# samples, labels = next(examples)
-# print(samples.shape, labels.shape)
+        return {'train_loader':train_loader, 'test_loader':test_loader}

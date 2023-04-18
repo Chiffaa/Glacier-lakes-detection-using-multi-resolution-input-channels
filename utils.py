@@ -1,9 +1,12 @@
 import torch
 import torchvision
+from data_loader import LakesDataset
 from architecture import padding
+import wandb
 
 WANDB_PROJECT_NAME = "glacier-lakes-mapping"
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
 
 def save_checkpoint(state, filename="my_checkpoint.pth.tar"):
     print("=> Saving checkpoint")
@@ -13,7 +16,7 @@ def load_checkpoint(checkpoint, model):
     print("=> Loading checkpoint")
     model.load_state_dict(checkpoint["state_dict"])
 
-def check_accuracy(loader, model, device=DEVICE):
+def check_accuracy(loader, model, epoch, device=DEVICE):
     num_correct = 0
     num_pixels = 0
 
@@ -35,6 +38,8 @@ def check_accuracy(loader, model, device=DEVICE):
         f"Got {num_correct}/{num_pixels} with acc {num_correct/num_pixels * 100:.2f}%"
     )
     print(f"Dice score: {dice_score/len(loader)}")
+
+    wandb.log({'epoch':epoch,'val_acc':num_correct/num_pixels * 100, 'dice_score':dice_score/len(loader)})
 
     model.train()
 

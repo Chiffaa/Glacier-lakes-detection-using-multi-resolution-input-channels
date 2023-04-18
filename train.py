@@ -1,12 +1,11 @@
 import torch
-#import albumentations as A
-#from albumentations.pytorch import ToTensorV2
 from tqdm import tqdm
 import torch.nn as nn
 import torch.optim as optim
 from architecture import UNet, padding
 from data_loader import LakesDataset
 from utils import DEVICE, WANDB_PROJECT_NAME
+import wandb
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -22,33 +21,63 @@ LEARNING_RATE = 1e-4
 BATCH_SIZE = 5
 NUM_EPOCHS = 3
 NUM_WORKERS = 2
+BATCH_SIZE=32
 
+def train_fn(data, targets, model, optimizer, loss_fn):
+    
+    data = data.to(device=DEVICE)
+    targets = targets.to(device=DEVICE)
 
-def train_fn(loader, model, optimizer, loss_fn, scaler):
-    loop = tqdm(loader)
-
-    for batch_idx, (data, targets) in enumerate(loop):
-        data = data.to(device=DEVICE)
-        targets = targets.to(device=DEVICE)
-
-        # forward
-        if DEVICE == "cuda":
-            with torch.cuda.amp.autocast():
-                predictions = padding(model(data), data)
-                loss = loss_fn(predictions, targets)
-
-        else:
+    # forward
+    if DEVICE == "cuda":
+        with torch.cuda.amp.autocast():
             predictions = padding(model(data), data)
             loss = loss_fn(predictions, targets)
 
-        # backward
-        optimizer.zero_grad()
-        scaler.scale(loss).backward()
-        scaler.step(optimizer)
-        scaler.update()
+    else:
+        predictions = padding(model(data), data)
+        loss = loss_fn(predictions, targets)
 
-        # update tqdm loop
-        loop.set_postfix(loss=loss.item())
+    # backward
+    optimizer.zero_grad()
+    loss.backward()
+
+    #optimizer step
+    optimizer.step()
+
+    
+    return loss.item()
+
+def train_log(loss, batch, epoch):
+    # Where the magic happens
+    wandb.log({"epoch": epoch, "batch":batch, "loss": loss})
+
+
+def train(model, loaders, loss_fn, optimizer):
+    with wandb.init(project='test_launch'):
+        wandb.config = {"learning_rate": LEARNING_RATE, "epochs": NUM_EPOCHS, "batch_size": BATCH_SIZE}
+        wandb.watch(model) 
+        
+        loop = tqdm(loaders['train_loader'])
+
+        for epoch in range(NUM_EPOCHS):
+
+            for batch_idx, (data, targets) in enumerate(loop):
+
+                loss = train_fn(data, targets, model, optimizer, loss_fn)
+
+
+                # update tqdm loop
+                loop.set_postfix(loss=loss)
+
+                train_log(loss, batch_idx, epoch)
+
+            check_accuracy(loaders['val_loader'], model)       
+
+
+    wandb.save("model.onnx")
+
+
 
 
 def main():
@@ -57,7 +86,7 @@ def main():
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
     train_dataset = LakesDataset(train=True, patch_size=1024)
-    val_dataset = LakesDataset(train=True, val=True, patch_size=1024)
+    val_dataset = LakesDataset(train=False, val=True, patch_size=1024)
 
     train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=BATCH_SIZE)
     val_loader = torch.utils.data.DataLoader(dataset=val_dataset, batch_size=BATCH_SIZE)
