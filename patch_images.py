@@ -17,9 +17,9 @@ class CropImages:
         array_min, array_max = array.min(), array.max()
         return ((array - array_min)/(array_max - array_min))
 
-    def save_patches(self, img_name, folder):
-        img = (rasterio.open(self.path + folder + '/images/' + img_name))
-        lbl = (rasterio.open(self.path + folder + '/labels/' + img_name + 'f'))
+    def save_patches(self, img_name):
+        img = (rasterio.open(self.path + '/images/' + img_name))
+        lbl = (rasterio.open(self.path + '/labels/' + img_name + 'f'))
 
         img = np.array([self.normalize(img.read(1)), self.normalize(img.read(2)), self.normalize(img.read(3))], dtype=np.float32)
         lbl = np.array((lbl.read(1) > 0.5).astype(np.float32))
@@ -40,22 +40,20 @@ class CropImages:
                         # checking if at least 70% of the image is not black
                         if (torch.sum(img_patch == 0) + torch.sum(img_patch == 1))/(self.patch_size * self.patch_size * 3) < 0.3:
 
-                            if not os.path.exists(self.path[:-1] + '_' + str(self.patch_size) + '/' + folder + '/images/'):
-                                os.makedirs(self.path[:-1] + '_' + str(self.patch_size) + '/' + folder + '/images/')
-                                os.makedirs(self.path[:-1] + '_' + str(self.patch_size) + '/' + folder + '/labels/')
+                            if not os.path.exists(self.path[:-1] + '_' + str(self.patch_size)  + '/images/'):
+                                os.makedirs(self.path[:-1] + '_' + str(self.patch_size) + '/images/')
+                                os.makedirs(self.path[:-1] + '_' + str(self.patch_size) + '/labels/')
 
 
-                            (self.transform(img_patch)).save(self.path[:-1] + '_' + str(self.patch_size) + '/' + folder + '/images/' + img_name[:-4] + '_'+str(i) +'_' + str(j) + '.tif')
-                            (self.transform(label_patch)).save(self.path[:-1] + '_' + str(self.patch_size) + '/' + folder + '/labels/' + img_name[:-4] + '_'+str(i) +'_' + str(j) + '.tiff')
+                            (self.transform(img_patch)).save(self.path[:-1] + '_' + str(self.patch_size)  + '/images/' + img_name[:-4] + '_'+str(i) +'_' + str(j) + '.tif')
+                            (self.transform(label_patch)).save(self.path[:-1] + '_' + str(self.patch_size) + '/labels/' + img_name[:-4] + '_'+str(i) +'_' + str(j) + '.tiff')
                         
 
 
     def crop_images(self):
         ''' This function loops through the data and saves the patches for each image '''
-        # folders might include train and test
-        folders = os.listdir(self.path)
-        for folder in folders:
-            img_names = os.listdir(self.path + folder + '/images')
-            for img in img_names:
-                self.save_patches(img, folder)
+        
+        img_names = os.listdir(self.path + '/images')
+        for img in img_names:
+            self.save_patches(img)
 

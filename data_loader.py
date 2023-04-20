@@ -37,23 +37,22 @@ class LakesDataset(Dataset):
             
         # The data should be structured in the working folder as {data (data_size): {train: [images, labels], test: [images, labels]}]}
 
-        if train or val:
-            self.images_path = self.data_path + '/train/images/'
-            self.labels_path = self.data_path + '/train/labels/'
+        
+        self.images_path = self.data_path + '/images/'
+        self.labels_path = self.data_path + '/labels/'
 
-        else: 
-            self.images_path = self.data_path + '/test/images/'
-            self.labels_path = self.data_path + '/test/labels/'
+        self.filenames_train = os.listdir(self.images_path)[:int(len(os.listdir(self.images_path))*0.8)]
+        self.filenames_test = os.listdir(self.images_path)[int(len(os.listdir(self.images_path))*0.8):]
+
 
         if train and val:
-            self.filenames = os.listdir(self.images_path)[:int(len(os.listdir(self.images_path))*(1-val))]
+            self.filenames = self.filenames_train[:int(len(self.filenames_train)*(1-val))]
         elif not train and val:
-            self.filenames = os.listdir(self.images_path)[int(len(os.listdir(self.images_path))*(1-val)):]
+            self.filenames = self.filenames_train[int(len(self.filenames_train)*(1-val)):]
         elif train and not val:
-            self.filenames = os.listdir(self.images_path)
+            self.filenames = self.filenames_train
         else:
-            self.filenames = os.listdir(self.images_path)
-
+            self.filenames = self.filenames_test
     def download_dataset(self):
 
         ''' For this you need to have kaggle.json file in users/username/.kaggle folder (or wherever you specify it)
@@ -104,13 +103,13 @@ class LakesDataset(Dataset):
         
         return ToTensor()(img).permute(1,2,0), ToTensor()(lbl)
 
-def get_loaders(patch_size, data_path=None, val_split=None, batch_size=None):
+def get_loaders(patch_size, data_path=None, val_split=None, batch_size=None, shuffle=False):
     if val_split:
         train_dataset =LakesDataset(train=True, val=val_split, data_path=data_path, patch_size=patch_size)
         val_dataset = LakesDataset(train=False, val=val_split, data_path=data_path, patch_size=patch_size)
         test_dataset =LakesDataset(train=False, data_path=data_path, patch_size=patch_size)
 
-        train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=batch_size)
+        train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=shuffle)
         val_loader = torch.utils.data.DataLoader(dataset=val_dataset, batch_size=batch_size)
         test_loader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=batch_size)
 
@@ -120,7 +119,7 @@ def get_loaders(patch_size, data_path=None, val_split=None, batch_size=None):
         train_dataset =LakesDataset(train=True, val=val_split, data_path=data_path, patch_size=patch_size)
         test_dataset =LakesDataset(train=False, data_path=data_path, patch_size=patch_size)
 
-        train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=batch_size)
+        train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=shuffle)
         test_loader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=batch_size)
 
         return {'train_loader':train_loader, 'test_loader':test_loader}

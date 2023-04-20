@@ -53,14 +53,14 @@ def train_log(loss, batch, epoch):
     wandb.log({"epoch": epoch, "batch":batch, "loss": loss})
 
 
-def train(model, loaders, loss_fn, optimizer):
+def train(model, loaders, loss_fn, optimizer, epochs=NUM_EPOCHS):
     with wandb.init(project='test_launch'):
-        wandb.config = {"learning_rate": LEARNING_RATE, "epochs": NUM_EPOCHS, "batch_size": BATCH_SIZE}
+        wandb.config = {"learning_rate": LEARNING_RATE, "epochs": epochs, "batch_size": BATCH_SIZE}
         wandb.watch(model) 
         
         loop = tqdm(loaders['train_loader'])
 
-        for epoch in range(NUM_EPOCHS):
+        for epoch in range(epochs):
 
             for batch_idx, (data, targets) in enumerate(loop):
 
@@ -73,9 +73,7 @@ def train(model, loaders, loss_fn, optimizer):
                 train_log(loss, batch_idx, epoch)
 
             check_accuracy(loaders['val_loader'], model)       
-
-
-    wandb.save("model.onnx")
+        wandb.save("model.onnx")
 
 
 
