@@ -32,7 +32,7 @@ class LakesDataset(Dataset):
                 self.data_path = 'data_' + str(self.patch_size)
 
         else:
-            self.data_path = 'data'
+            self.data_path = self.data_path +'data'
                                
             
         # The data should be structured in the working folder as {data (data_size): {train: [images, labels], test: [images, labels]}]}

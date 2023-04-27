@@ -8,14 +8,18 @@ _wandb:
     framework: torch
     is_jupyter_run: true
     is_kaggle_kernel: true
-    start_time: 1681998906.788788
+    start_time: 1682612395.435115
     t:
       1:
       - 1
+      - 2
+      - 3
       - 41
       - 55
       2:
       - 1
+      - 2
+      - 3
       - 41
       - 55
       3:
