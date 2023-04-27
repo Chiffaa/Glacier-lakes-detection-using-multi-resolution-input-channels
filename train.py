@@ -23,6 +23,24 @@ NUM_EPOCHS = 3
 NUM_WORKERS = 2
 BATCH_SIZE=32
 
+
+def iou_loss(pred, target):
+    # Flatten tensors
+    pred = pred.view(-1)
+    target = target.view(-1)
+
+    # Calculate intersection and union
+    intersection = (pred * target).sum()
+    union = pred.sum() + target.sum() - intersection
+
+    # Calculate IoU
+    iou = intersection / union
+
+    # Return IoU loss
+    return 1 - iou
+
+losses = {'BCE':nn.BCEWithLogitsLoss(), 'IoU': iou_loss}
+
 def train_fn(data, targets, model, optimizer, loss_fn):
     
     data = data.to(device=DEVICE)
@@ -54,6 +72,9 @@ def train_log(loss, batch, epoch):
 
 
 def train(model, loaders, loss_fn, optimizer, epochs=NUM_EPOCHS):
+
+    loss_fn = losses[loss_fn]
+
     with wandb.init(project='test_launch'):
         wandb.config = {"learning_rate": LEARNING_RATE, "epochs": epochs, "batch_size": BATCH_SIZE}
         wandb.watch(model) 
@@ -107,4 +128,7 @@ def main():
     
 
 if __name__ == "__main__":
-    main()
+    im = (torch.rand(1, 1, 1024, 1024) > 0.5).float()
+    pred = (torch.rand(1, 1, 1024, 1024) > 0.5).float()
+
+    print(losses['IoU'](pred, im))
