@@ -31,11 +31,11 @@ def check_accuracy(loader, model, val=True, device=DEVICE):
     iou_score = 0
 
     
-    accuracy = Accuracy(task='binary', num_classes=2)
-    recall = Recall(task = 'binary', num_classes=2)
-    precision = Precision(task = 'binary', num_classes=2)
+    accuracy = Accuracy(task='binary', num_classes=2).to(DEVICE)
+    recall = Recall(task = 'binary', num_classes=2).to(DEVICE)
+    precision = Precision(task = 'binary', num_classes=2).to(DEVICE)
     # dice = Dice(num_classes=2)
-    iou = JaccardIndex(task='binary', num_classes=2)
+    iou = JaccardIndex(task='binary', num_classes=2).to(DEVICE)
 
     model.eval()
 
