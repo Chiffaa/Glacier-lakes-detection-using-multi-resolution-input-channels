@@ -66,9 +66,9 @@ def train_fn(data, targets, model, optimizer, loss_fn):
     
     return loss.item()
 
-def train_log(loss, batch, epoch):
+def train_log(loss, batch):
     # Where the magic happens
-    wandb.log({"epoch": epoch, "batch":batch, "loss": loss})
+    wandb.log({"batch":batch, "loss": loss})
 
 
 def train(model, loaders, loss_fn, optimizer, epochs=NUM_EPOCHS):
@@ -86,8 +86,9 @@ def train(model, loaders, loss_fn, optimizer, epochs=NUM_EPOCHS):
             for batch_idx, (data, targets) in enumerate(loop):
                 loss = train_fn(data, targets, model, optimizer, loss_fn)
                 loop.set_postfix(loss=loss) # update tqdm loop
-                train_log(loss, batch_idx, epoch)
+                train_log(loss, batch_idx)
 
+            wandb.log({'epoch':epoch})
             check_accuracy(loaders['train_loader'], model, val=False)
             check_accuracy(loaders['val_loader'], model)       
         wandb.save('model.h5')

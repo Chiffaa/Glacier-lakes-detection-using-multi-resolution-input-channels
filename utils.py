@@ -1,5 +1,6 @@
 import torch
 import torchvision
+from torchmetrics import JaccardIndex, Accuracy, Dice, Recall, Precision
 from data_loader import LakesDataset
 from architecture import padding
 import wandb
@@ -23,12 +24,18 @@ def check_accuracy(loader, model, val=True, device=DEVICE):
     else:
         dataset = 'train'
 
-    num_correct = 0
-    num_pixels = 0
-    precision = 0
-    recall = 0
+    acc_score = 0
+    precision_score = 0
+    recall_score = 0
     dice_score = 0
-    iou = 0
+    iou_score = 0
+
+    
+    accuracy = Accuracy(task='binary', num_classes=2)
+    recall = Recall(task = 'binary', num_classes=2)
+    precision = Precision(task = 'binary', num_classes=2)
+    # dice = Dice(num_classes=2)
+    iou = JaccardIndex(task='binary', num_classes=2)
 
     model.eval()
 
@@ -36,33 +43,22 @@ def check_accuracy(loader, model, val=True, device=DEVICE):
         for x, y in loader:
             x = x.to(device)
             y = y.to(device)
-            preds = (torch.sigmoid(model(x)) > 0.5).float()
-            preds = padding(preds, x)
-            num_correct += (preds == y).sum() # True Positives
-            num_pixels += torch.numel(preds)
+            preds = padding(torch.sigmoid(model(x)), x)
 
-            # Metrics Precision, Recall, Dice score, IoU
-            precision += num_correct / preds.sum() # preds.sum() = TP + FP
-            recall += num_correct / y.sum() # y.sum() = TP + FN
+            acc_score += accuracy(preds, y)
+            precision_score += precision(preds, y)
+            recall_score += recall(preds, y)
+            # dice_score += dice(preds, y)
+            iou_score += iou(preds, y)
 
-            # 2*TP / ((TP + FP) + (TP + FN))
-            dice_score += (2*(preds*y).sum()) / ((preds + y).sum() + 1e-8)
+            
 
-            # Intersection over Union
-            intersection = (preds * y).sum()
-            union = preds.sum() + y.sum() - intersection
-            iou += intersection / union
+    #print(f"{dataset}_acc: {acc_score/len(loader)},{dataset}_precision': {precision_score/len(loader)},{dataset}_recall': {recall_score/len(loader)},{dataset}_IoU_score': {iou_score/len(loader)}")
 
-    print(
-        f"Got {num_correct}/{num_pixels} with acc {num_correct/num_pixels * 100:.2f}%"
-    )
-    print(f"Dice score: {dice_score/len(loader)}, IoU score: {iou/len(loader)}")
-
-    wandb.log({f'{dataset}_acc':num_correct/num_pixels, 
-               f'{dataset}_precision': precision/len(loader), 
-               f'{dataset}_recall': recall/len(loader), 
-               f'{dataset}_dice_score':dice_score/len(loader), 
-               f'{dataset}_IoU_score':iou/len(loader)})
+    wandb.log({f'{dataset}_acc':acc_score/len(loader), 
+               f'{dataset}_precision': precision_score/len(loader), 
+               f'{dataset}_recall': recall_score/len(loader),  
+               f'{dataset}_IoU_score':iou_score/len(loader)})
 
     model.train()
 
