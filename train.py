@@ -89,8 +89,7 @@ def train(model, loaders, loss_fn, optimizer, epochs=NUM_EPOCHS):
                 train_log(loss, batch_idx)
 
             wandb.log({'epoch':epoch})
-            check_accuracy(loaders['train_loader'], model, val=False)
-            check_accuracy(loaders['val_loader'], model)       
+            check_accuracy(loaders, model, val=False)  
         wandb.save('model.h5')
 
 

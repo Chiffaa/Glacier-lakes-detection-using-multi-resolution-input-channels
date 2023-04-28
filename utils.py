@@ -17,18 +17,22 @@ def load_checkpoint(checkpoint, model):
     print("=> Loading checkpoint")
     model.load_state_dict(checkpoint["state_dict"])
 
-def check_accuracy(loader, model, val=True, device=DEVICE):
+def check_accuracy(loaders, model, val=True, device=DEVICE):
 
-    if val: 
-        dataset = 'val'
-    else:
-        dataset = 'train'
+    train_acc_score = 0
+    train_precision_score = 0
+    train_recall_score = 0
+    train_dice_score = 0
+    train_iou_score = 0
 
-    acc_score = 0
-    precision_score = 0
-    recall_score = 0
-    dice_score = 0
-    iou_score = 0
+    val_acc_score = 0
+    val_precision_score = 0
+    val_recall_score = 0
+    val_dice_score = 0
+    val_iou_score = 0
+
+    train_loader = loaders['train_loader']
+    val_loader = loaders['val_loader']
 
     
     accuracy = Accuracy(task='binary', num_classes=2).to(DEVICE)
@@ -40,25 +44,40 @@ def check_accuracy(loader, model, val=True, device=DEVICE):
     model.eval()
 
     with torch.no_grad():
-        for x, y in loader:
+        for x, y in train_loader:
             x = x.to(device)
             y = y.to(device)
             preds = padding(torch.sigmoid(model(x)), x)
 
-            acc_score += accuracy(preds, y)
-            precision_score += precision(preds, y)
-            recall_score += recall(preds, y)
-            # dice_score += dice(preds, y)
-            iou_score += iou(preds, y)
+            train_acc_score += accuracy(preds, y)
+            train_precision_score += precision(preds, y)
+            train_recall_score += recall(preds, y)
+            # train_dice_score += dice(preds, y)
+            train_iou_score += iou(preds, y)
+
+        for x, y in val_loader:
+            x = x.to(device)
+            y = y.to(device)
+            preds = padding(torch.sigmoid(model(x)), x)
+
+            val_acc_score += accuracy(preds, y)
+            val_precision_score += precision(preds, y)
+            val_recall_score += recall(preds, y)
+            # val_dice_score += dice(preds, y)
+            val_iou_score += iou(preds, y)
 
             
 
     #print(f"{dataset}_acc: {acc_score/len(loader)},{dataset}_precision': {precision_score/len(loader)},{dataset}_recall': {recall_score/len(loader)},{dataset}_IoU_score': {iou_score/len(loader)}")
 
-    wandb.log({f'{dataset}_acc':acc_score/len(loader), 
-               f'{dataset}_precision': precision_score/len(loader), 
-               f'{dataset}_recall': recall_score/len(loader),  
-               f'{dataset}_IoU_score':iou_score/len(loader)})
+    wandb.log({f'train_acc':train_acc_score/len(train_loader), 
+               f'train_precision': train_precision_score/len(train_loader), 
+               f'train_recall': train_recall_score/len(train_loader),  
+               f'train_IoU_score':train_iou_score/len(train_loader), 
+               f'val_acc':val_acc_score/len(val_loader), 
+               f'val_precision': val_precision_score/len(val_loader), 
+               f'val_recall': val_recall_score/len(val_loader),  
+               f'val_IoU_score':val_iou_score/len(val_loader),})
 
     model.train()
 
