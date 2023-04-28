@@ -79,22 +79,18 @@ def train(model, loaders, loss_fn, optimizer, epochs=NUM_EPOCHS):
         wandb.config = {"learning_rate": LEARNING_RATE, "epochs": epochs, "batch_size": BATCH_SIZE}
         wandb.watch(model) 
         
-        loop = tqdm(loaders['train_loader'])
 
         for epoch in range(epochs):
+            loop = tqdm(loaders['train_loader'])
 
             for batch_idx, (data, targets) in enumerate(loop):
-
                 loss = train_fn(data, targets, model, optimizer, loss_fn)
-
-
-                # update tqdm loop
-                loop.set_postfix(loss=loss)
-
+                loop.set_postfix(loss=loss) # update tqdm loop
                 train_log(loss, batch_idx, epoch)
 
+            check_accuracy(loaders['train_loader'], model, val=False)
             check_accuracy(loaders['val_loader'], model)       
-        wandb.save("model.onnx")
+        wandb.save('model.h5')
 
 
 

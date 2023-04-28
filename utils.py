@@ -16,11 +16,19 @@ def load_checkpoint(checkpoint, model):
     print("=> Loading checkpoint")
     model.load_state_dict(checkpoint["state_dict"])
 
-def check_accuracy(loader, model, device=DEVICE):
+def check_accuracy(loader, model, val=True, device=DEVICE):
+
+    if val: 
+        dataset = 'val'
+    else:
+        dataset = 'train'
+
     num_correct = 0
     num_pixels = 0
-
+    precision = 0
+    recall = 0
     dice_score = 0
+    iou = 0
 
     model.eval()
 
@@ -30,21 +38,31 @@ def check_accuracy(loader, model, device=DEVICE):
             y = y.to(device)
             preds = (torch.sigmoid(model(x)) > 0.5).float()
             preds = padding(preds, x)
-            num_correct += (preds == y).sum()
+            num_correct += (preds == y).sum() # True Positives
             num_pixels += torch.numel(preds)
+
+            # Metrics Precision, Recall, Dice score, IoU
+            precision += num_correct / preds.sum() # preds.sum() = TP + FP
+            recall += num_correct / y.sum() # y.sum() = TP + FN
+
+            # 2*TP / ((TP + FP) + (TP + FN))
             dice_score += (2*(preds*y).sum()) / ((preds + y).sum() + 1e-8)
+
+            # Intersection over Union
             intersection = (preds * y).sum()
             union = preds.sum() + y.sum() - intersection
-
-            # Calculate IoU
-            iou = intersection / union
+            iou += intersection / union
 
     print(
         f"Got {num_correct}/{num_pixels} with acc {num_correct/num_pixels * 100:.2f}%"
     )
     print(f"Dice score: {dice_score/len(loader)}, IoU score: {iou/len(loader)}")
 
-    wandb.log({'val_acc':num_correct/num_pixels * 100, 'dice_score':dice_score/len(loader), 'IoU_score':iou/len(loader)})
+    wandb.log({f'{dataset}_acc':num_correct/num_pixels, 
+               f'{dataset}_precision': precision/len(loader), 
+               f'{dataset}_recall': recall/len(loader), 
+               f'{dataset}_dice_score':dice_score/len(loader), 
+               f'{dataset}_IoU_score':iou/len(loader)})
 
     model.train()
 
