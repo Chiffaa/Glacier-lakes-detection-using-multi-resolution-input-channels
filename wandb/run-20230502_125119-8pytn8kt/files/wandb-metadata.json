@@ -1,0 +1,49 @@
+{
+    "os": "Windows-10-10.0.22621-SP0",
+    "python": "3.10.6",
+    "heartbeatAt": "2023-05-02T10:51:20.857194",
+    "startedAt": "2023-05-02T10:51:19.404820",
+    "docker": null,
+    "cuda": null,
+    "args": null,
+    "state": "running",
+    "program": "<python with no main file>",
+    "git": {
+        "remote": "https://github.com/Chiffaa/Glacier-lakes-detection-using-multi-resolution-input-channels.git",
+        "commit": "f05511a617a5f80efed2a369ab25f638c6496296"
+    },
+    "email": "elena.golimblevskaya@gmail.com",
+    "root": "E:/OneDrive/Study/potsdam/Glacier lakes detection/Glacier-lakes-detection-using-multi-resolution-input-channels",
+    "host": "DESKTOP-NA32PQI",
+    "username": "\u0415\u043b\u0435\u043d\u0430",
+    "executable": "c:\\Users\\\u0415\u043b\u0435\u043d\u0430\\AppData\\Local\\Programs\\Python\\Python310\\python.exe",
+    "cpu_count": 4,
+    "cpu_count_logical": 8,
+    "cpu_freq": {
+        "current": 1800.0,
+        "min": 0.0,
+        "max": 1800.0
+    },
+    "cpu_freq_per_core": [
+        {
+            "current": 1800.0,
+            "min": 0.0,
+            "max": 1800.0
+        }
+    ],
+    "disk": {
+        "total": 651.6957550048828,
+        "used": 116.77545547485352
+    },
+    "gpu": "GeForce MX150",
+    "gpu_count": 1,
+    "gpu_devices": [
+        {
+            "name": "GeForce MX150",
+            "memory_total": 4294967296
+        }
+    ],
+    "memory": {
+        "total": 15.83804702758789
+    }
+}

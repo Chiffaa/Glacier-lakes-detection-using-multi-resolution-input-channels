@@ -2,6 +2,7 @@ import torch
 from tqdm import tqdm
 import torch.nn as nn
 import torch.optim as optim
+import torchvision
 from architecture import UNet, padding
 from data_loader import LakesDataset
 from utils import DEVICE, WANDB_PROJECT_NAME
@@ -39,9 +40,9 @@ def iou_loss(pred, target):
     # Return IoU loss
     return 1 - iou
 
-losses = {'BCE':nn.BCEWithLogitsLoss(), 'IoU': iou_loss}
+losses = {'BCE':nn.BCEWithLogitsLoss(), 'IoU': iou_loss, 'Focal':torchvision.ops.focal_loss.sigmoid_focal_loss}
 
-def train_fn(data, targets, model, optimizer, loss_fn):
+def train_fn(data, targets, model, optimizer, loss_fn, reduction):
     
     data = data.to(device=DEVICE)
     targets = targets.to(device=DEVICE)
@@ -50,11 +51,17 @@ def train_fn(data, targets, model, optimizer, loss_fn):
     if DEVICE == "cuda":
         with torch.cuda.amp.autocast():
             predictions = padding(model(data), data)
-            loss = loss_fn(predictions, targets)
+            if reduction:
+                loss = loss_fn(predictions, targets, reduction=reduction)
+            else:
+                loss = loss_fn(predictions, targets)
 
     else:
         predictions = padding(model(data), data)
-        loss = loss_fn(predictions, targets)
+        if reduction:
+                loss = loss_fn(predictions, targets, reduction=reduction)
+        else:
+            loss = loss_fn(predictions, targets)
 
     # backward
     optimizer.zero_grad()
@@ -71,9 +78,10 @@ def train_log(loss, batch):
     wandb.log({"batch":batch, "loss": loss})
 
 
-def train(model, loaders, loss_fn, optimizer, epochs=NUM_EPOCHS):
+def train(model, loaders, loss_fn_name, optimizer, epochs=NUM_EPOCHS, reduction=None):
 
-    loss_fn = losses[loss_fn]
+
+    loss_fn = losses[loss_fn_name]
 
     with wandb.init(project='test_launch'):
         wandb.config = {"learning_rate": LEARNING_RATE, "epochs": epochs, "batch_size": BATCH_SIZE}
@@ -84,7 +92,7 @@ def train(model, loaders, loss_fn, optimizer, epochs=NUM_EPOCHS):
             loop = tqdm(loaders['train_loader'])
 
             for batch_idx, (data, targets) in enumerate(loop):
-                loss = train_fn(data, targets, model, optimizer, loss_fn)
+                loss = train_fn(data, targets, model, optimizer, loss_fn, reduction)
                 loop.set_postfix(loss=loss) # update tqdm loop
                 train_log(loss, batch_idx)
 
