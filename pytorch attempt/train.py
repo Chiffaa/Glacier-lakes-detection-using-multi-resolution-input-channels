@@ -26,19 +26,15 @@ BATCH_SIZE=32
 
 
 def iou_loss(pred, target):
-    # Flatten tensors
-    pred = pred.view(-1)
-    target = target.view(-1)
-
     # Calculate intersection and union
     intersection = (pred * target).sum()
     union = pred.sum() + target.sum() - intersection
 
     # Calculate IoU
-    iou = intersection / union
+    iou = 1 - (intersection / union)
 
     # Return IoU loss
-    return 1 - iou
+    return iou
 
 losses = {'BCE':nn.BCEWithLogitsLoss(), 'IoU': iou_loss, 'Focal':torchvision.ops.focal_loss.sigmoid_focal_loss}
 
@@ -50,7 +46,7 @@ def train_fn(data, targets, model, optimizer, loss_fn, reduction):
     # forward
     if DEVICE == "cuda":
         with torch.cuda.amp.autocast():
-            predictions = padding(model(data), data)
+            predictions = (padding(model(data), data) > 0.5).float()
             if reduction:
                 loss = loss_fn(predictions, targets, reduction=reduction)
             else:
