@@ -5,7 +5,7 @@ from keras.layers import Input, Conv2D, MaxPooling2D, UpSampling2D, Concatenate,
 from keras.models import Model
 
 
-def conv_block(inputs, num_filters, nm=''):
+def conv_block(inputs, num_filters):
     x = Conv2D(num_filters, 3, padding="same")(inputs)
     x = BatchNormalization()(x)
     x = Activation("relu")(x)
@@ -27,7 +27,7 @@ def decoder_block(inputs, skip_features, num_filters):
     x = conv_block(x, num_filters)
     return x
 
-def build_unet(input_shape):
+def build_unet(input_shape, name="UNET"):
     inputs = Input(input_shape)
 
     s1, p1 = encoder_block(inputs, 64)
@@ -44,7 +44,7 @@ def build_unet(input_shape):
 
     outputs = Conv2D(1, 1, padding="same", activation="sigmoid")(d4)
 
-    model = Model(inputs, outputs, name="UNET")
+    model = Model(inputs, outputs, name=name)
     return model
 
 

@@ -47,7 +47,7 @@ class LakesDataset:
         x = np.array([(x.read(1))/255, (x.read(2))/255, (x.read(3))/255], dtype=np.float32).transpose(1,2,0)
         return x
 
-    def read_mask(path):
+    def read_mask(self, path):
         path = path.decode()
         x = rasterio.open(path)
         x = np.expand_dims(np.array((x.read(1) > 0.5).astype(np.float32), dtype=np.float32), axis=-1)
