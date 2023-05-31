@@ -6,7 +6,7 @@ from keras.metrics import BinaryAccuracy, Recall, Precision
 import numpy as np
 
 PATCH_SIZE=256
-BATCH_SIZE=16
+BATCH_SIZE=8
 NUM_EPOCHS=100
 
 
